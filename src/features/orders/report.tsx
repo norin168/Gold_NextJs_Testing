@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Printer } from "lucide-react";
+import { ClipboardList, Printer, SearchX } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useOrdersStore } from "@/stores/orders-store";
+import { formatRecordDate } from "@/lib/utils";
 
 type TypeFilter = "all" | "buy" | "sell";
 
@@ -82,17 +83,20 @@ export function OrdersReport() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Report</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <ClipboardList className="size-4 text-muted-foreground" />
+          Report
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-muted/30 p-3">
           <div className="flex flex-col gap-1">
             <span className="text-sm text-muted-foreground">Search</span>
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name or No"
-              className="w-48"
+              className="w-48 bg-background"
             />
           </div>
           <div className="flex flex-col gap-1">
@@ -135,7 +139,7 @@ export function OrdersReport() {
           <div className="overflow-auto rounded-md border">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="sticky top-0 z-10 bg-background">
                   <TableHead>No</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Customer</TableHead>
@@ -153,7 +157,7 @@ export function OrdersReport() {
                   <TableRow
                     key={r.id}
                     data-state={selectedId === r.id ? "selected" : undefined}
-                    className="cursor-pointer"
+                    className="cursor-pointer transition-colors hover:bg-muted/50 data-[state=selected]:bg-primary/10"
                     onClick={() =>
                       setSelectedId(selectedId === r.id ? null : r.id)
                     }
@@ -184,16 +188,16 @@ export function OrdersReport() {
                       {formatDeposit(r.deposit, r.depositCurrency)} (
                       {r.paymentMethod})
                     </TableCell>
-                    <TableCell>{r.date}</TableCell>
+                    <TableCell>{formatRecordDate(r.date)}</TableCell>
                   </TableRow>
                 ))}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell
-                      colSpan={10}
-                      className="text-center text-muted-foreground"
-                    >
-                      No records found
+                    <TableCell colSpan={10} className="h-32 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                        <SearchX className="size-6" />
+                        <span>No records found</span>
+                      </div>
                     </TableCell>
                   </TableRow>
                 )}

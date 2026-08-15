@@ -11,10 +11,7 @@ export default function OrdersPage() {
           report below.
         </p>
       </div>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <OrderForm type="buy" />
-        <OrderForm type="sell" />
-      </div>
+      <OrderForm />
       <OrdersReport />
     </div>
   );

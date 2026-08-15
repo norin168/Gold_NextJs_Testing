@@ -18,7 +18,7 @@ export interface OrderRecord {
   deposit: number;
   depositCurrency: Currency;
   paymentMethod: PaymentMethod;
-  date: string; // ISO date
+  date: string; // ISO date or datetime-local (YYYY-MM-DDTHH:mm)
 }
 
 /**

@@ -1,14 +1,13 @@
 export type Currency = "USD" | "KHR";
 
-export type GoldType = "buy" | "existing";
+export type RecordType = "buy" | "stock";
 
 export interface BuyStockRecord {
   id: number;
-  type: "buy" | "stock";
-  goldType?: GoldType; // only set when type === "buy"
+  type: RecordType;
   weight: number; // លី
   purify: number; // %
-  price?: number; // only set when type === "buy"
-  currency?: Currency;
-  date: string; // ISO date
+  price: number;
+  currency: Currency;
+  date: string; // ISO date or datetime-local (YYYY-MM-DDTHH:mm)
 }

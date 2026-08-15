@@ -15,19 +15,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useOrdersStore } from "@/stores/orders-store";
 import { calculateOrderPrice } from "@/types/order";
 import type { OrderType, PaymentMethod } from "@/types/order";
 import type { Currency } from "@/types/buy-stock";
+import { nowForDateTimeInput } from "@/lib/utils";
 
 const schema = z.object({
+  type: z.enum(["buy", "sell"]),
   customerName: z.string().min(1, "Name is required"),
   customerPhone: z.string().min(1, "Phone is required"),
   customerAddress: z.string().min(1, "Address is required"),
@@ -44,7 +41,7 @@ const schema = z.object({
 type FormInput = z.input<typeof schema>;
 type FormValues = z.output<typeof schema>;
 
-export function OrderForm({ type }: { type: OrderType }) {
+export function OrderForm() {
   const addRecord = useOrdersStore((s) => s.addRecord);
 
   const {
@@ -56,9 +53,16 @@ export function OrderForm({ type }: { type: OrderType }) {
     formState: { errors },
   } = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { depositCurrency: "USD", paymentMethod: "Cash" },
+    defaultValues: {
+      type: "buy",
+      purify: 9999,
+      depositCurrency: "USD",
+      paymentMethod: "Cash",
+      date: nowForDateTimeInput(),
+    },
   });
 
+  const type = useWatch({ control, name: "type" });
   const weight = useWatch({ control, name: "weight" });
   const purify = useWatch({ control, name: "purify" });
   const odds = useWatch({ control, name: "odds" });
@@ -70,7 +74,7 @@ export function OrderForm({ type }: { type: OrderType }) {
 
   function onSubmit(values: FormValues) {
     addRecord({
-      type,
+      type: values.type,
       customerName: values.customerName,
       customerPhone: values.customerPhone,
       customerAddress: values.customerAddress,
@@ -85,12 +89,18 @@ export function OrderForm({ type }: { type: OrderType }) {
       date: values.date,
     });
     toast.success(
-      `Customer Order ${type === "buy" ? "Buy" : "Sell"} report saved`
+      `Customer Order ${values.type === "buy" ? "Buy" : "Sell"} report saved`,
     );
-    reset({ depositCurrency: "USD", paymentMethod: "Cash" });
+    reset({
+      type: values.type,
+      purify: 9999,
+      depositCurrency: "USD",
+      paymentMethod: "Cash",
+      date: nowForDateTimeInput(),
+    });
   }
 
-  const prefix = type;
+  const prefix = "order";
   const isBuy = type === "buy";
 
   return (
@@ -116,36 +126,35 @@ export function OrderForm({ type }: { type: OrderType }) {
               <ArrowUpCircle className="size-4" />
             )}
           </span>
-          Customer Order {isBuy ? "Buy" : "Sell"}
+          Customer Order
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="flex flex-col gap-5"
-        >
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
           <p className="text-sm font-medium text-muted-foreground">
             Customer Information
           </p>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={`${prefix}-name`}>Name</Label>
-            <Input id={`${prefix}-name`} {...register("customerName")} />
-            {errors.customerName && (
-              <p className="text-sm text-destructive">
-                {errors.customerName.message}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={`${prefix}-phone`}>Phone</Label>
-            <Input id={`${prefix}-phone`} {...register("customerPhone")} />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={`${prefix}-address`}>Address</Label>
-            <Input
-              id={`${prefix}-address`}
-              {...register("customerAddress")}
-            />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={`${prefix}-name`}>Name</Label>
+              <Input id={`${prefix}-name`} {...register("customerName")} />
+              {errors.customerName && (
+                <p className="text-sm text-destructive">
+                  {errors.customerName.message}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={`${prefix}-phone`}>Phone</Label>
+              <Input id={`${prefix}-phone`} {...register("customerPhone")} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={`${prefix}-address`}>Address</Label>
+              <Input
+                id={`${prefix}-address`}
+                {...register("customerAddress")}
+              />
+            </div>
           </div>
 
           <Separator />
@@ -153,103 +162,122 @@ export function OrderForm({ type }: { type: OrderType }) {
             Order Information
           </p>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={`${prefix}-shop`}>Shop Name</Label>
-            <Input id={`${prefix}-shop`} {...register("shopName")} />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={`${prefix}-odds`}>Odds (USD)</Label>
-            <Input
-              id={`${prefix}-odds`}
-              type="number"
-              step="any"
-              {...register("odds")}
-            />
-            {errors.odds && (
-              <p className="text-sm text-destructive">
-                {errors.odds.message}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={`${prefix}-weight`}>Weight (លី)</Label>
-            <Input
-              id={`${prefix}-weight`}
-              type="number"
-              step="any"
-              {...register("weight")}
-            />
-            {errors.weight && (
-              <p className="text-sm text-destructive">
-                {errors.weight.message}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={`${prefix}-purify`}>
-              Purify (%) — use 9999 for 100% gold
-            </Label>
-            <Input
-              id={`${prefix}-purify`}
-              type="number"
-              step="any"
-              {...register("purify")}
-            />
-          </div>
-          <div className="flex gap-2">
-            <div className="flex flex-1 flex-col gap-2">
-              <Label htmlFor={`${prefix}-deposit`}>Deposit</Label>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="flex flex-col gap-2">
+              <Label>Type</Label>
+              <Select
+                defaultValue="buy"
+                onValueChange={(v: OrderType) => setValue("type", v)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="buy">Order Buy</SelectItem>
+                  <SelectItem value="sell">Order Sell</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={`${prefix}-shop`}>Shop Name</Label>
+              <Input id={`${prefix}-shop`} {...register("shopName")} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={`${prefix}-odds`}>Odds (USD)</Label>
               <Input
-                id={`${prefix}-deposit`}
+                id={`${prefix}-odds`}
                 type="number"
                 step="any"
-                {...register("deposit")}
+                {...register("odds")}
+              />
+              {errors.odds && (
+                <p className="text-sm text-destructive">
+                  {errors.odds.message}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={`${prefix}-weight`}>Weight (លី)</Label>
+              <Input
+                id={`${prefix}-weight`}
+                type="number"
+                step="any"
+                {...register("weight")}
+              />
+              {errors.weight && (
+                <p className="text-sm text-destructive">
+                  {errors.weight.message}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={`${prefix}-purify`}>Purify (%)</Label>
+              <Input
+                id={`${prefix}-purify`}
+                type="number"
+                step="any"
+                {...register("purify")}
               />
             </div>
-            <div className="flex w-28 flex-col gap-2">
-              <Label>Currency</Label>
+            <div className="flex gap-2">
+              <div className="flex flex-1 flex-col gap-2">
+                <Label htmlFor={`${prefix}-deposit`}>Deposit</Label>
+                <Input
+                  id={`${prefix}-deposit`}
+                  type="number"
+                  step="any"
+                  {...register("deposit")}
+                />
+              </div>
+              <div className="flex w-24 flex-col gap-2">
+                <Label>Currency</Label>
+                <Select
+                  defaultValue="USD"
+                  onValueChange={(v: Currency) =>
+                    setValue("depositCurrency", v)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="KHR">KHR</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label>Payment Method</Label>
               <Select
-                defaultValue="USD"
-                onValueChange={(v: Currency) =>
-                  setValue("depositCurrency", v)
+                defaultValue="Cash"
+                onValueChange={(v: PaymentMethod) =>
+                  setValue("paymentMethod", v)
                 }
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="KHR">KHR</SelectItem>
+                  <SelectItem value="Cash">Cash</SelectItem>
+                  <SelectItem value="ABA">ABA</SelectItem>
+                  <SelectItem value="ACLEDA">ACLEDA</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label>Payment Method</Label>
-            <Select
-              defaultValue="Cash"
-              onValueChange={(v: PaymentMethod) =>
-                setValue("paymentMethod", v)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Cash">Cash</SelectItem>
-                <SelectItem value="ABA">ABA</SelectItem>
-                <SelectItem value="ACLEDA">ACLEDA</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor={`${prefix}-date`}>Date Order</Label>
-            <Input id={`${prefix}-date`} type="date" {...register("date")} />
-            {errors.date && (
-              <p className="text-sm text-destructive">
-                {errors.date.message}
-              </p>
-            )}
+            <div className="flex flex-col gap-2">
+              <Label htmlFor={`${prefix}-date`}>Date Order</Label>
+              <Input
+                id={`${prefix}-date`}
+                type="datetime-local"
+                {...register("date")}
+              />
+              {errors.date && (
+                <p className="text-sm text-destructive">
+                  {errors.date.message}
+                </p>
+              )}
+            </div>
           </div>
 
           <Separator />
@@ -260,7 +288,7 @@ export function OrderForm({ type }: { type: OrderType }) {
             </span>
           </div>
 
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full sm:w-auto sm:self-end">
             Save Report
           </Button>
         </form>

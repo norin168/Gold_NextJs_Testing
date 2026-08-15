@@ -28,15 +28,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useBuyStockStore } from "@/stores/buy-stock-store";
+import { formatRecordDate } from "@/lib/utils";
 
 type TypeFilter = "all" | "buy" | "stock";
-type GoldTypeFilter = "all" | "buy" | "existing";
 
 export function BuyStockReport() {
   const records = useBuyStockStore((s) => s.records);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
-  const [goldTypeFilter, setGoldTypeFilter] = useState<GoldTypeFilter>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -44,18 +43,12 @@ export function BuyStockReport() {
   const filtered = useMemo(() => {
     return records.filter((r) => {
       if (typeFilter !== "all" && r.type !== typeFilter) return false;
-      if (
-        typeFilter === "buy" &&
-        goldTypeFilter !== "all" &&
-        r.goldType !== goldTypeFilter
-      )
-        return false;
       if (dateFrom && r.date < dateFrom) return false;
       if (dateTo && r.date > dateTo) return false;
       if (search && !String(r.id).includes(search)) return false;
       return true;
     });
-  }, [records, typeFilter, goldTypeFilter, dateFrom, dateTo, search]);
+  }, [records, typeFilter, dateFrom, dateTo, search]);
 
   const totalsSource = selectedId
     ? filtered.filter((r) => r.id === selectedId)
@@ -99,26 +92,6 @@ export function BuyStockReport() {
               </SelectContent>
             </Select>
           </div>
-          {typeFilter === "buy" && (
-            <div className="flex flex-col gap-1">
-              <span className="text-sm text-muted-foreground">
-                Gold Type
-              </span>
-              <Select
-                value={goldTypeFilter}
-                onValueChange={(v: GoldTypeFilter) => setGoldTypeFilter(v)}
-              >
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="buy">Buy</SelectItem>
-                  <SelectItem value="existing">Existing</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
           <div className="flex flex-col gap-1">
             <span className="text-sm text-muted-foreground">From</span>
             <Input
@@ -146,7 +119,6 @@ export function BuyStockReport() {
                 <TableRow className="sticky top-0 z-10 bg-background">
                   <TableHead>No</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Gold Type</TableHead>
                   <TableHead>Weight (លី)</TableHead>
                   <TableHead>Purify (%)</TableHead>
                   <TableHead>Price</TableHead>
@@ -172,22 +144,19 @@ export function BuyStockReport() {
                         {r.type}
                       </Badge>
                     </TableCell>
-                    <TableCell className="capitalize text-muted-foreground">
-                      {r.type === "buy" ? r.goldType : "-"}
-                    </TableCell>
                     <TableCell>{r.weight}</TableCell>
                     <TableCell>{r.purify}</TableCell>
                     <TableCell>
-                      {r.price ? `${r.currency} ${r.price}` : "-"}
+                      {r.currency} {r.price}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {r.date}
+                      {formatRecordDate(r.date)}
                     </TableCell>
                   </TableRow>
                 ))}
                 {filtered.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-32 text-center">
+                    <TableCell colSpan={6} className="h-32 text-center">
                       <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                         <SearchX className="size-6" />
                         <span>No records found</span>

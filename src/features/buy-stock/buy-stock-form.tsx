@@ -23,12 +23,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useBuyStockStore } from "@/stores/buy-stock-store";
-import type { GoldType, Currency } from "@/types/buy-stock";
+import type { RecordType, Currency } from "@/types/buy-stock";
+import { nowForDateTimeInput } from "@/lib/utils";
 
 const schema = z.object({
-  goldType: z.enum(["buy", "existing"]),
-  price: z.coerce.number().optional(),
-  currency: z.enum(["USD", "KHR"]).optional(),
+  type: z.enum(["buy", "stock"]),
+  price: z.coerce.number().positive("Price must be greater than 0"),
+  currency: z.enum(["USD", "KHR"]),
   weight: z.coerce.number().positive("Weight must be greater than 0"),
   purify: z.coerce.number().min(0).max(9999),
   date: z.string().min(1, "Date is required"),
@@ -37,9 +38,9 @@ const schema = z.object({
 type FormInput = z.input<typeof schema>;
 type FormValues = z.output<typeof schema>;
 
-export function BuyGoldForm() {
+export function BuyStockForm() {
   const addRecord = useBuyStockStore((s) => s.addRecord);
-  const [goldType, setGoldType] = useState<GoldType>("buy");
+  const [type, setType] = useState<RecordType>("buy");
 
   const {
     register,
@@ -49,21 +50,30 @@ export function BuyGoldForm() {
     formState: { errors },
   } = useForm<FormInput, unknown, FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { goldType: "buy", currency: "USD" },
+    defaultValues: {
+      type: "buy",
+      currency: "USD",
+      purify: 9999,
+      date: nowForDateTimeInput(),
+    },
   });
 
   function onSubmit(values: FormValues) {
     addRecord({
-      type: "buy",
-      goldType: values.goldType,
+      type: values.type,
       weight: values.weight,
       purify: values.purify,
-      price: values.goldType === "buy" ? values.price : undefined,
-      currency: values.goldType === "buy" ? values.currency : undefined,
+      price: values.price,
+      currency: values.currency,
       date: values.date,
     });
-    toast.success("Buy Gold report saved");
-    reset({ goldType: values.goldType, currency: "USD" });
+    toast.success("Report saved");
+    reset({
+      type: values.type,
+      currency: "USD",
+      purify: 9999,
+      date: nowForDateTimeInput(),
+    });
   }
 
   return (
@@ -73,7 +83,7 @@ export function BuyGoldForm() {
           <span className="flex size-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400">
             <Coins className="size-4" />
           </span>
-          Buy Gold
+          Buy & Stock
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -85,9 +95,9 @@ export function BuyGoldForm() {
             <Label>Type</Label>
             <Select
               defaultValue="buy"
-              onValueChange={(value: GoldType) => {
-                setGoldType(value);
-                setValue("goldType", value);
+              onValueChange={(value: RecordType) => {
+                setType(value);
+                setValue("type", value);
               }}
             >
               <SelectTrigger>
@@ -95,41 +105,42 @@ export function BuyGoldForm() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="buy">Buy (ទិញមាស)</SelectItem>
-                <SelectItem value="existing">Existing (មាសស្រាប់)</SelectItem>
+                <SelectItem value="stock">Stock</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {goldType === "buy" && (
-            <div className="flex gap-2">
-              <div className="flex flex-1 flex-col gap-2">
-                <Label htmlFor="price">Price</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="any"
-                  {...register("price")}
-                />
-              </div>
-              <div className="flex w-28 flex-col gap-2">
-                <Label>Currency</Label>
-                <Select
-                  defaultValue="USD"
-                  onValueChange={(value: Currency) =>
-                    setValue("currency", value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="KHR">KHR</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          <div className="flex gap-2">
+            <div className="flex flex-1 flex-col gap-2">
+              <Label htmlFor="price">Price</Label>
+              <Input
+                id="price"
+                type="number"
+                step="any"
+                {...register("price")}
+              />
+              {errors.price && (
+                <p className="text-sm text-destructive">
+                  {errors.price.message}
+                </p>
+              )}
             </div>
-          )}
+            <div className="flex w-28 flex-col gap-2">
+              <Label>Currency</Label>
+              <Select
+                defaultValue="USD"
+                onValueChange={(value: Currency) => setValue("currency", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USD">USD</SelectItem>
+                  <SelectItem value="KHR">KHR</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="weight">Weight (លី)</Label>
@@ -157,10 +168,8 @@ export function BuyGoldForm() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="date">
-              {goldType === "buy" ? "Date Purchase" : "Date"}
-            </Label>
-            <Input id="date" type="date" {...register("date")} />
+            <Label htmlFor="date">{type === "buy" ? "Date" : "Date Stock"}</Label>
+            <Input id="date" type="datetime-local" {...register("date")} />
             {errors.date && (
               <p className="text-sm text-destructive">
                 {errors.date.message}
